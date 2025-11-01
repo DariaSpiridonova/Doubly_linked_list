@@ -54,6 +54,8 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity)
         list->prev[i] = -1;
     }
 
+    list->next[capacity] = 0;
+
     if ((err = ListVerify(list)))
     {
         LIST_DUMP(list);
@@ -81,6 +83,19 @@ List_Errors ListVerify(doubly_linked_list *list)
     else if (list->free      < 0)         return TOO_SMALL_FREE;
     else if (list->head > list->capacity) return TOO_MUCH_HEAD;
     else if (list->tail > list->capacity) return TOO_MUCH_TAIL;
+    for (ssize_t i = list->head; i != 0; i = list->next[i])
+    {
+        if (list->next[list->prev[i]] != i)
+        {
+            printf("After element with index %zd follows element with index %zd, and not %zd", list->prev[i], list->next[list->prev[i]], i);
+            return NEXT_FROM_PREV_IS_NOT_CURRENT;
+        }
+        if (list->prev[list->next[i]] != i) 
+        {
+            printf("the element with index %zd is preceded by with index %zd, and not %zd", list->next[i], list->prev[list->next[i]], i);
+            return PREV_FROM_NEXT_IS_NOT_CURRENT;
+        }
+    }
 
     ASSERT(list);
 
@@ -90,7 +105,6 @@ List_Errors ListVerify(doubly_linked_list *list)
 // TODO: Logfile with list image evolution + text description
 // FIXME: !make list work!
 // TODO: add more examples
-// TODO: ListDump fix govnocode! (split to functions)
 
 List_Errors ListDestroy(doubly_linked_list *list)
 {
@@ -117,141 +131,141 @@ List_Errors ListDestroy(doubly_linked_list *list)
     return err;
 }
 
-// system
 void ListDump(const doubly_linked_list *list, const char *file, int line)
 {
     ASSERT(list);
 
+    dump_to_console(stdin, list, file, line);
+
+    dump_to_logfile(list);
+
+    create_graph(list);
+
+    ASSERT(list);
+}
+
+void dump_to_console(FILE * fp, const doubly_linked_list *list, const char *file, int line)
+{
     printf("ListDump called from %s :%d\n", file, line);
-    printf("LIST[%p]\n", list);
-    printf("LIST_DATA[%p]\n", list->data);
-    printf("LIST_NEXT[%p]\n", list->next);
-    printf("LIST_PREV[%p]\n", list->prev);
-    printf("{\n");
-    printf("    capacity = %ld\n", list->capacity);
-    printf("    size     = %ld\n", list->size);
-    printf("    head     = %ld\n", list->head);
-    printf("    tail     = %ld\n", list->tail);
-    printf("    free     = %ld\n", list->free);
-    printf("    {\n");
-    printf("        List contents:\n");
-    for (ssize_t i = list->head; i != 0; i = list->next[i])
-    {
-        printf("            [%zd] = %d\n", i, list->data[i]);
-    }
-    printf("        Next contents:\n");
-    for (ssize_t i = 0; i < list->capacity; i++)
-    {
-        printf("            [%zd] = %zd\n", i, list->next[i]);
-    }
-    printf("        Prev contents:\n");
-    for (ssize_t i = 0; i < list->capacity; i++)
-    {
-        printf("            [%zd] = %zd\n", i, list->prev[i]);
-    }
+    DUMP_PARAMETERS(fp, list);
+
+    print_content("List", list->head, 0, 0, -1, list->next, list->data);
+    print_content("Next", 0, list->capacity, 1, 1, list->next, list->next);
+    print_content("Prev", 0, list->capacity, 1, 1, list->next, list->prev);
+    
     printf("    }\n");
     printf("}\n");
+}
 
-    FILE *logfile = fopen("logfile.htm", "w");
+void print_content(const char *str, ssize_t initial_el,  ssize_t limitation, ssize_t index, ssize_t index1, const ssize_t * next, const void * buffer)
+{
+    printf("        %s contents:\n", str);
+    for (ssize_t i = initial_el; i * index1 < limitation; i = 1 * index + i * index + (index == 0) * next[i])
+    {
+        printf("            [%zd] = %d\n", i, (index == 0) ? ((int *)buffer)[i] : ((ssize_t *)buffer)[i]);
+    }
+}
 
-    if (!open_file_success(logfile, "logfile.htm"))
+void dump_to_logfile(const doubly_linked_list *list)
+{
+    FILE *fp = fopen("logfile.htm", "w");
+
+    if (!open_file_success(fp, "logfile.htm"))
     {
         return;
     }
 
-    fprintf(logfile, "<pre>\n");
-    fprintf(logfile, "LIST[%p]\n", list);
-    fprintf(logfile, "LIST_DATA[%p]\n", list->data);
-    fprintf(logfile, "LIST_NEXT[%p]\n", list->next);
-    fprintf(logfile, "LIST_PREV[%p]\n\n", list->prev);
-    fprintf(logfile, "{\n");
-    fprintf(logfile, "    capacity = %ld\n", list->capacity);
-    fprintf(logfile, "    size     = %ld\n\n", list->size);
-    fprintf(logfile, "    head     = %ld\n", list->head);
-    fprintf(logfile, "    tail     = %ld\n", list->tail);
-    fprintf(logfile, "    free     = %ld\n", list->free);
-    fprintf(logfile, "    {\n");
-    fprintf(logfile, "        List contents:\n");
+    fprintf(fp, "<pre>\n");
+    DUMP_PARAMETERS(stdin, list);
+    fprintf(fp, "        List contents:\n");
     for (ssize_t i = 1; i < list->capacity; i++)
     {
-        fprintf(logfile, "          data index = %ld\n", i);
-        fprintf(logfile, "          element = %d\n", list->data[i]);
-        fprintf(logfile, "          next = %ld\n", list->next[i]);
-        fprintf(logfile, "          prev = %ld\n\n\n", list->prev[i]);
+        fprintf(fp, "          data index = %ld\n", i);
+        fprintf(fp, "          element = %d\n", list->data[i]);
+        fprintf(fp, "          next = %ld\n", list->next[i]);
+        fprintf(fp, "          prev = %ld\n\n\n", list->prev[i]);
     }
-    fprintf(logfile, "    }\n");
-    fprintf(logfile, "}\n");
+    fprintf(fp, "    }\n");
+    fprintf(fp, "}\n");
 
-    fprintf(logfile, "<img src=\""PATH_TO_GRAPHVIZ ".png\" alt=\"Graphviz image\" width=\"1800\">");
+    fprintf(fp, "<img src=\""PATH_TO_GRAPHVIZ ".png\" alt=\"Graphviz image\" width=\"1800\">");
 
-    if (!close_files_success(logfile, "logfile.htm"))
+    if (!close_files_success(fp, "logfile.htm"))
+    {
+        return;
+    }
+}
+
+void create_graph(const doubly_linked_list *list)
+{
+    FILE *fp = fopen(PATH_TO_GRAPHVIZ ".gv", "w");
+
+    if (!open_file_success(fp, PATH_TO_GRAPHVIZ ".gv"))
     {
         return;
     }
 
-    //create_graph();
-    FILE *list_graph = fopen(PATH_TO_GRAPHVIZ ".gv", "w");
-
-    if (!open_file_success(logfile, PATH_TO_GRAPHVIZ ".gv"))
-    {
-        return;
-    }
-
-    fprintf(list_graph, "digraph {\n");
-    fprintf(list_graph, "   rankdir=LR;\n");
-    fprintf(list_graph, "   node[shape=\"record\", style=\"filled\", fillcolor=\"grey\", fontsize=20, pin = true];\n");
-    fprintf(list_graph, "splines = ortho;\n");
-    fprintf(list_graph, "rank = same;\n");
-    fprintf(list_graph, "bgcolor=\"LightBlue\";\n");
-    fprintf(list_graph, "invis [shape = record, style = \"invis\", height = 6 , pos = \"2.0, 0.0!\"]");
-    fprintf(list_graph, "   \"0\" [label = \"head = %ld | tail = %ld | free = %ld\", fillcolor = \"yellow\", pos = \"0.0, 0.0!\"];\n", list->head, list->tail, list->free);
+    fprintf(fp, "digraph {\n");
+    fprintf(fp, "   rankdir=LR;\n");
+    fprintf(fp, "   node[shape=\"record\", style=\"filled\", fillcolor=\"grey\", fontsize=20, pin = true];\n");
+    fprintf(fp, "splines = ortho;\n");
+    fprintf(fp, "rank = same;\n");
+    fprintf(fp, "bgcolor=\"LightBlue\";\n");
+    fprintf(fp, "invis [shape = record, style = \"invis\", height = 6 , pos = \"2.0, 0.0!\"]");
+    fprintf(fp, "   \"0\" [label = \"head = %ld | tail = %ld | free = %ld\", fillcolor = \"yellow\", pos = \"0.0, 0.0!\"];\n", list->head, list->tail, list->free);
     for (ssize_t i = 1; i < list->capacity; i++)
     {
         printf("next = %zd\n", list->next[i]);
-        fprintf(list_graph, "   \"%zd\" [label = \"data index = %zd | element = %d | {prev = %zd | next = %zd}\", fillcolor = \"aqua\", pos = \"%zd.0, 0.0!\"];\n", i, i, list->data[i], list->prev[i], list->next[i], 4 * i);
+        fprintf(fp, "   \"%zd\" [label = \"data index = %zd | element = %d | {prev = %zd | next = %zd}\", fillcolor = \"aqua\", pos = \"%zd.0, 0.0!\"];\n", i, i, list->data[i], list->prev[i], list->next[i], 4 * i);
     }
-    fprintf(list_graph, "\"h\" [label = \"head\", fillcolor = \"Pink\", pos = \"%zd.0, 3.5!\", height = 1, width = 1];\n", list->head * 4);
-    fprintf(list_graph, "\"t\" [label = \"tail\", fillcolor = \"Pink\", pos = \"%zd.0, 3.5!\", height = 1, width = 1];\n", list->tail * 4);
-    fprintf(list_graph, "\"f\" [label = \"free\", fillcolor = \"Pink\", pos = \"%zd.0, 3.5!\", height = 1, width = 1];\n", list->free * 4);
-    fprintf(list_graph, "   \"0\" -> \"1\"");
+    print_pointer_on_significant_el(fp, "head", list->head);
+    print_pointer_on_significant_el(fp, "tail", list->tail);
+    print_pointer_on_significant_el(fp, "free", list->free);
+
+    fprintf(fp, "   \"0\" -> \"1\"");
     for (ssize_t i = 2; i < list->capacity; i++)
     {
-        fprintf(list_graph, "-> \"%zd\"", i);
+        fprintf(fp, "-> \"%zd\"", i);
     }
-    fprintf(list_graph, "[style = invis];\n");
-    fprintf(list_graph, "   ");
-//https://graphviz.org/docs/attrs/splines/
-    fprintf(list_graph, "\"%zd\"", list->head);
+    fprintf(fp, "[style = invis];\n");
+    fprintf(fp, "   ");
+
+    fprintf(fp, "\"%zd\"", list->head);
     for (ssize_t i = list->next[list->head]; i != 0; i = list->next[i])
     {
-        fprintf(list_graph, " -> \"%zd\"", i);
+        fprintf(fp, " -> \"%zd\"", i);
     }
-    fprintf(list_graph, "[style = \"\", color = \"black\"];\n");
+    fprintf(fp, "[style = \"\", color = \"black\"];\n");
 
-    fprintf(list_graph, "\"h\" -> \"%zd\";\n", list->head);
-    fprintf(list_graph, "\"t\" -> \"%zd\";\n", list->tail);
-    fprintf(list_graph, "\"f\" -> \"%zd\";\n", list->free);
+    link_with_el(fp, 'h', list->head);
+    link_with_el(fp, 't', list->tail);
+    link_with_el(fp, 'f', list->free);
     
-    fprintf(list_graph, "\"%zd\"", list->tail);
+    fprintf(fp, "\"%zd\"", list->tail);
     for (ssize_t i = list->prev[list->tail]; i != 0; i = list->prev[i])
     {
-        fprintf(list_graph, " -> \"%zd\"", i);
+        fprintf(fp, " -> \"%zd\"", i);
     }
-    fprintf(list_graph, "[style = \"\", color = \"red\"];\n");
+    fprintf(fp, "[style = \"\", color = \"red\"];\n");
 
-    fprintf(list_graph, "}");
-
-    // int ret_val = system("realpath ../Graphviz/list_graph1.png");
-    
-    
-    if (!close_files_success(list_graph, PATH_TO_GRAPHVIZ ".gv"))
+    fprintf(fp, "}");
+ 
+    if (!close_files_success(fp, PATH_TO_GRAPHVIZ ".gv"))
     {
         return;
     }
     
     system("dot -Kfdp " PATH_TO_GRAPHVIZ ".gv -Tpng -o " PATH_TO_GRAPHVIZ ".png");
+}
 
-    ASSERT(list);
+void print_pointer_on_significant_el(FILE *fp, const char *str, ssize_t el)
+{
+    fprintf(fp, "\"%c\" [label = \"%s\", fillcolor = \"Pink\", pos = \"%zd.0, 3.5!\", height = 1, width = 1];\n", str[0], str, el * 4);
+}
+
+void link_with_el(FILE *fp, const char ch, ssize_t el)
+{
+    fprintf(fp, "\"%c\" -> \"%zd\";\n", ch, el);
 }
 
 bool open_file_success(FILE *fp, const char * file_name)
@@ -325,6 +339,14 @@ bool print_error(List_Errors err)
 
         case TOO_MUCH_TAIL:
             printf("The tail value is too much");
+            return true;
+
+        case NEXT_FROM_PREV_IS_NOT_CURRENT:
+            printf("Next element from prev element is not current");
+            return true;
+
+        case PREV_FROM_NEXT_IS_NOT_CURRENT:
+            printf("Prev element from next element is not current");
             return true;
 
         case TOO_MUCH_FREE:

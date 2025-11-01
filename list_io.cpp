@@ -24,6 +24,7 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
 
     if (list->size == list->capacity)
     {
+        if (list->next[list->free] == 0) list->next[list->free] = list->capacity + 1;
         list->data = (used_type *)realloc(list->data, (INCREASE_IN*(size_t)(list->capacity) + 1)*sizeof(used_type));
         if (list->data == NULL) return ALLOCATE_MEMORY_ERROR;
 
@@ -42,13 +43,14 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
             return ALLOCATE_MEMORY_ERROR;
         }
         
-        for (ssize_t i = list->capacity + 1; i < INCREASE_IN*list->capacity + 1; i++)
+        list->capacity *= INCREASE_IN;
+        for (ssize_t i = list->capacity + 1; i < list->capacity + 1; i++)
         {
             list->data[i] = POIZON;
             list->next[i] = i + 1;
             list->prev[i] = -1;
         }
-        list->capacity *= INCREASE_IN;
+        list->next[list->capacity] = 0;
         
         err = NO_LIST_ERROR;
         if ((err = ListVerify(list)))
