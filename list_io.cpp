@@ -22,9 +22,15 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
         return NO_CURRENT_ELEMENT;
     }
 
-    if (list->size == list->capacity)
+    if (list->size + 1 == list->capacity)
     {
-        if (list->next[list->free] == 0) list->next[list->free] = list->capacity + 1;
+        printf("call\n");
+        LIST_DUMP(list);
+        if (list->next[list->free] == 0) 
+        {
+            printf("list->next[list->free] == 0\n");
+            list->next[list->free] = list->capacity + 1;
+        }
         list->data = (used_type *)realloc(list->data, (INCREASE_IN*(size_t)(list->capacity) + 1)*sizeof(used_type));
         if (list->data == NULL) return ALLOCATE_MEMORY_ERROR;
 
@@ -43,14 +49,15 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
             return ALLOCATE_MEMORY_ERROR;
         }
         
-        list->capacity *= INCREASE_IN;
-        for (ssize_t i = list->capacity + 1; i < list->capacity + 1; i++)
+        for (ssize_t i = list->capacity + 1; i < list->capacity * INCREASE_IN + 1; i++)
         {
             list->data[i] = POIZON;
             list->next[i] = i + 1;
             list->prev[i] = -1;
         }
+        list->capacity *= INCREASE_IN;
         list->next[list->capacity] = 0;
+        LIST_DUMP(list);
         
         err = NO_LIST_ERROR;
         if ((err = ListVerify(list)))
@@ -61,7 +68,9 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
     }
 
     ssize_t occupied = list->free;
+    printf("list->free = list->next[list->free] = %zd\n", list->free);
     list->free = list->next[list->free];
+    printf("list->free = list->next[list->free] = %zd\n", list->free);
 
     list->data[occupied] = value;
     list->next[occupied] = list->next[index];
@@ -88,7 +97,6 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
         LIST_DUMP(list);
         return err;
     }
-
 
     return occupied;
 }

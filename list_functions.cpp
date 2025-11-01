@@ -69,7 +69,7 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity)
 
 List_Errors ListVerify(doubly_linked_list *list)
 {
-    // next from prev is current and vice versa
+    printf("list->free = %zd\n", list->free);
     ASSERT(list);
 
     if (list == NULL)                     return EMPTY_POINTER_ON_LIST_STRUCTURE;
@@ -101,7 +101,7 @@ List_Errors ListVerify(doubly_linked_list *list)
 
     return NO_LIST_ERROR;
 }
-// TODO: Better verifier
+
 // TODO: Logfile with list image evolution + text description
 // FIXME: !make list work!
 // TODO: add more examples
@@ -149,9 +149,14 @@ void dump_to_console(FILE * fp, const doubly_linked_list *list, const char *file
     printf("ListDump called from %s :%d\n", file, line);
     DUMP_PARAMETERS(fp, list);
 
+    printf("    capacity = %ld\n", list->capacity);
+    printf("    size     = %ld\n", list->size);
+    printf("    head     = %ld\n", list->head);
+    printf("    tail     = %ld\n", list->tail);
+    printf("    free     = %ld\n", list->free);
     print_content("List", list->head, 0, 0, -1, list->next, list->data);
-    print_content("Next", 0, list->capacity, 1, 1, list->next, list->next);
-    print_content("Prev", 0, list->capacity, 1, 1, list->next, list->prev);
+    print_content("Next", 0, list->capacity + 1, 1, 1, list->next, list->next);
+    print_content("Prev", 0, list->capacity  + 1, 1, 1, list->next, list->prev);
     
     printf("    }\n");
     printf("}\n");
@@ -178,7 +183,7 @@ void dump_to_logfile(const doubly_linked_list *list)
     fprintf(fp, "<pre>\n");
     DUMP_PARAMETERS(stdin, list);
     fprintf(fp, "        List contents:\n");
-    for (ssize_t i = 1; i < list->capacity; i++)
+    for (ssize_t i = 1; i < list->capacity + 1; i++)
     {
         fprintf(fp, "          data index = %ld\n", i);
         fprintf(fp, "          element = %d\n", list->data[i]);
@@ -213,7 +218,7 @@ void create_graph(const doubly_linked_list *list)
     fprintf(fp, "bgcolor=\"LightBlue\";\n");
     fprintf(fp, "invis [shape = record, style = \"invis\", height = 6 , pos = \"2.0, 0.0!\"]");
     fprintf(fp, "   \"0\" [label = \"head = %ld | tail = %ld | free = %ld\", fillcolor = \"yellow\", pos = \"0.0, 0.0!\"];\n", list->head, list->tail, list->free);
-    for (ssize_t i = 1; i < list->capacity; i++)
+    for (ssize_t i = 1; i < list->capacity + 1; i++)
     {
         printf("next = %zd\n", list->next[i]);
         fprintf(fp, "   \"%zd\" [label = \"data index = %zd | element = %d | {prev = %zd | next = %zd}\", fillcolor = \"aqua\", pos = \"%zd.0, 0.0!\"];\n", i, i, list->data[i], list->prev[i], list->next[i], 4 * i);
@@ -223,7 +228,7 @@ void create_graph(const doubly_linked_list *list)
     print_pointer_on_significant_el(fp, "free", list->free);
 
     fprintf(fp, "   \"0\" -> \"1\"");
-    for (ssize_t i = 2; i < list->capacity; i++)
+    for (ssize_t i = 2; i < list->capacity + 1; i++)
     {
         fprintf(fp, "-> \"%zd\"", i);
     }

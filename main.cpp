@@ -15,8 +15,8 @@ int main()
     printf("%zd", list_insert(&list, 2, 5));
     printf("%zd", list_insert(&list, 1, 5));
     printf("%zd", list_insert(&list, 1, 5));
-    
-    
+    printf("%zd", list_insert(&list, 1, 5));   
+    printf("%zd", list_insert(&list, 1, 5));   
 
     printf("%d", list_delete(&list, 2));
 
