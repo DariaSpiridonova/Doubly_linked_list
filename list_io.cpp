@@ -24,19 +24,31 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
 
     if (list->size == list->capacity)
     {
-        list->data = (used_type *)realloc(list->data, (2*(size_t)(list->capacity) + 1)*sizeof(used_type));
-        list->next = (ssize_t *)realloc(list->next, (2*(size_t)(list->capacity) + 1)*sizeof(ssize_t));
-        list->prev = (ssize_t *)realloc(list->prev, (2*(size_t)(list->capacity) + 1)*sizeof(ssize_t));
+        list->data = (used_type *)realloc(list->data, (INCREASE_IN*(size_t)(list->capacity) + 1)*sizeof(used_type));
+        if (list->data == NULL) return ALLOCATE_MEMORY_ERROR;
 
-        if (list->data == NULL || list->next == NULL || list->prev == NULL) return ALLOCATE_MEMORY_ERROR;
+        list->next = (ssize_t *)realloc(list->next, (INCREASE_IN*(size_t)(list->capacity) + 1)*sizeof(ssize_t));
+        if (list->prev == NULL) 
+        {
+            free(list->data);
+            return ALLOCATE_MEMORY_ERROR;
+        }
+
+        list->prev = (ssize_t *)realloc(list->prev, (INCREASE_IN*(size_t)(list->capacity) + 1)*sizeof(ssize_t));
+        if (list->prev == NULL) 
+        {
+            free(list->data);
+            free(list->next);
+            return ALLOCATE_MEMORY_ERROR;
+        }
         
-        for (ssize_t i = list->capacity + 1; i < 2*list->capacity + 1; i++)
+        for (ssize_t i = list->capacity + 1; i < INCREASE_IN*list->capacity + 1; i++)
         {
             list->data[i] = POIZON;
             list->next[i] = i + 1;
             list->prev[i] = -1;
         }
-        list->next[2*list->capacity] = 0;
+        list->capacity *= INCREASE_IN;
         
         err = NO_LIST_ERROR;
         if ((err = ListVerify(list)))
@@ -44,7 +56,6 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
             LIST_DUMP(list);
             return err;
         }
-        list->capacity *= INCREASE_IN;
     }
 
     ssize_t occupied = list->free;
@@ -75,6 +86,7 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
         LIST_DUMP(list);
         return err;
     }
+
 
     return occupied;
 }

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define PATH_TO_GRAPHVIZ "../Graphviz/list_graph1"
 #define LIST_DUMP(list)\
         ListDump(list,__FILE__, __LINE__)
 
@@ -19,13 +20,12 @@
     assert(list->free >= 0);\
     assert(list->head <= list->capacity);\
     assert(list->tail <= list->capacity);\
-    assert(list->free <= list->capacity);\
-
-const size_t CANARY = 43685;
-const size_t POIZON = 765418;
-const size_t INCREASE_IN = 2;
 
 typedef int used_type;
+
+const used_type CANARY = 43685;
+const used_type POIZON = 765418;
+const ssize_t INCREASE_IN = 2;
 
 typedef struct
 {
@@ -61,8 +61,9 @@ enum List_Errors
 List_Errors ListInit(doubly_linked_list *list, ssize_t capacity);
 List_Errors ListVerify(doubly_linked_list *list);
 List_Errors ListDestroy(doubly_linked_list *list);
-void ListDump(doubly_linked_list *list, const char *file, int line);
-bool open_file_success(FILE *fp);
+void ListDump(const doubly_linked_list *list, const char *file, int line);
+bool open_file_success(FILE *fp, const char * file_name);
+bool close_files_success(FILE *fp, const char * file_name);
 bool print_error(List_Errors err);
 
 ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value);

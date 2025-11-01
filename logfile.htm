@@ -1,12 +1,12 @@
 <pre>
-LIST[0x7cb67dc00020]
-LIST_DATA[0x503000000040]
-LIST_NEXT[0x506000000020]
-LIST_PREV[0x506000000080]
+LIST[0x75c111c00020]
+LIST_DATA[0x5060000000e0]
+LIST_NEXT[0x50b000000040]
+LIST_PREV[0x50b0000000f0]
 
 {
-    capacity = 6
-    size     = 3
+    capacity = 12
+    size     = 8
 
     head     = 1
     tail     = 3
@@ -15,13 +15,13 @@ LIST_PREV[0x506000000080]
         List contents:
           data index = 1
           element = 5
-          next = 4
+          next = 9
           prev = 0
 
 
           data index = 2
           element = 765418
-          next = 5
+          next = 10
           prev = -1
 
 
@@ -34,14 +34,51 @@ LIST_PREV[0x506000000080]
           data index = 4
           element = 5
           next = 3
-          prev = 1
+          prev = 5
 
 
           data index = 5
-          element = 765418
+          element = 5
+          next = 4
+          prev = 6
+
+
+          data index = 6
+          element = 5
+          next = 5
+          prev = 7
+
+
+          data index = 7
+          element = 5
           next = 6
+          prev = 8
+
+
+          data index = 8
+          element = 5
+          next = 7
+          prev = 9
+
+
+          data index = 9
+          element = 5
+          next = 8
+          prev = 1
+
+
+          data index = 10
+          element = 765418
+          next = 11
+          prev = -1
+
+
+          data index = 11
+          element = 765418
+          next = 12
           prev = -1
 
 
     }
 }
+<img src="../Graphviz/list_graph1.png" alt="Graphviz image" width="1800">

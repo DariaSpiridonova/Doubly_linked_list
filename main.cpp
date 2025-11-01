@@ -14,11 +14,16 @@ int main()
     printf("%zd", list_insert(&list, 1, 5));
     printf("%zd", list_insert(&list, 2, 5));
     printf("%zd", list_insert(&list, 1, 5));
+    printf("%zd", list_insert(&list, 1, 5));
+    printf("%zd", list_insert(&list, 1, 5));
+    printf("%zd", list_insert(&list, 1, 5));
+    printf("%zd", list_insert(&list, 1, 5));
+    printf("%zd", list_insert(&list, 1, 5));
 
-    printf("%zd", list_delete(&list, 2));
+
+    printf("%d", list_delete(&list, 2));
 
     LIST_DUMP(&list);
-
     if ((err = ListDestroy(&list)))
         print_error(err);
 
