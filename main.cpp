@@ -9,7 +9,9 @@ int main()
 
     if ((err = ListInit(&list, 6)))
         print_error(err);
-    
+    // wanna go for a walk this evening? /\_/\
+    // 					                ( 0.0 )
+    // 					                 > ^ <
     printf("%zd", list_insert(&list, 0, 5));
     printf("%zd", list_insert(&list, 1, 5));
     printf("%zd", list_insert(&list, 2, 5));
