@@ -1,11 +1,8 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <assert.h>
 #include "list.h"
 
-List_Errors ListInit(doubly_linked_list *list, ssize_t capacity)
+List_Errors ListInit(doubly_linked_list *list, ssize_t capacity, const char *logfile_name)
 {
     assert(list != NULL);
     assert(capacity > 0);
@@ -39,7 +36,7 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 
@@ -58,7 +55,7 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 
@@ -69,7 +66,6 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity)
 
 List_Errors ListVerify(doubly_linked_list *list)
 {
-    printf("list->free = %zd\n", list->free);
     ASSERT(list);
 
     if (list == NULL)                     return EMPTY_POINTER_ON_LIST_STRUCTURE;
@@ -106,7 +102,7 @@ List_Errors ListVerify(doubly_linked_list *list)
 // FIXME: !make list work!
 // TODO: add more examples
 
-List_Errors ListDestroy(doubly_linked_list *list)
+List_Errors ListDestroy(doubly_linked_list *list, const char *logfile_name)
 {
     ASSERT(list);
 
@@ -114,7 +110,7 @@ List_Errors ListDestroy(doubly_linked_list *list)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 
@@ -131,23 +127,56 @@ List_Errors ListDestroy(doubly_linked_list *list)
     return err;
 }
 
-void ListDump(const doubly_linked_list *list, const char *file, int line)
+void ListDump(const doubly_linked_list *list, const char *file, int line, const char *logfile_name)
 {
     ASSERT(list);
 
     dump_to_console(stdin, list, file, line);
 
-    dump_to_logfile(list);
+    time_t rawtime;      
+    struct tm *timeinfo; 
+    char buffer[80];
 
-    create_graph(list);
+    // Get the current calendar time
+    time(&rawtime);
+
+    // Convert the calendar time to local time
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%Y_%m_%d_%H_%M_%S", timeinfo);
+
+    // Print the formatted time string
+    printf("Current time: %s\n", buffer);
+
+    char gvfile_name[SIZE_OF_NAME] = {0};
+    sprintf(gvfile_name, "%s%s%s.gv", link_to_graphviz_file, logfile_name, buffer);
+
+    dump_to_logfile(list, logfile_name, gvfile_name);
+
+    create_graph(list, gvfile_name);
 
     ASSERT(list);
+}
+
+void dump_parameters(FILE * fp, const doubly_linked_list *list)
+{
+    fprintf(fp, "LIST[%p]\n", list);\
+    fprintf(fp, "LIST_DATA[%p]\n", list->data);\
+    fprintf(fp, "LIST_NEXT[%p]\n", list->next);\
+    fprintf(fp, "LIST_PREV[%p]\n\n", list->prev);\
+    fprintf(fp, "{\n");\
+    fprintf(fp, "    capacity = %ld\n", list->capacity);\
+    fprintf(fp, "    size     = %ld\n", list->size);\
+    fprintf(fp, "    head     = %ld\n", list->head);\
+    fprintf(fp, "    tail     = %ld\n", list->tail);\
+    fprintf(fp, "    free     = %ld\n", list->free);\
+    fprintf(fp, "    {\n");
 }
 
 void dump_to_console(FILE * fp, const doubly_linked_list *list, const char *file, int line)
 {
     printf("ListDump called from %s :%d\n", file, line);
-    DUMP_PARAMETERS(fp, list);
+    dump_parameters(fp, list);
 
     printf("    capacity = %ld\n", list->capacity);
     printf("    size     = %ld\n", list->size);
@@ -171,17 +200,17 @@ void print_content(const char *str, ssize_t initial_el,  ssize_t limitation, ssi
     }
 }
 
-void dump_to_logfile(const doubly_linked_list *list)
+void dump_to_logfile(const doubly_linked_list *list, const char *logfile_name, const char *gvfile_name)
 {
-    FILE *fp = fopen("logfile.htm", "w");
+    FILE *fp = fopen(logfile_name, "a");
 
-    if (!open_file_success(fp, "logfile.htm"))
+    if (!open_file_success(fp, logfile_name))
     {
         return;
     }
 
     fprintf(fp, "<pre>\n");
-    DUMP_PARAMETERS(stdin, list);
+    dump_parameters(stdin, list);
     fprintf(fp, "        List contents:\n");
     for (ssize_t i = 1; i < list->capacity + 1; i++)
     {
@@ -193,19 +222,19 @@ void dump_to_logfile(const doubly_linked_list *list)
     fprintf(fp, "    }\n");
     fprintf(fp, "}\n");
 
-    fprintf(fp, "<img src=\""PATH_TO_GRAPHVIZ ".png\" alt=\"Graphviz image\" width=\"1800\">");
+    fprintf(fp, "<img src=\"%*s.png\" alt=\"Graphviz image\" width=\"1800\">", (int)strlen(gvfile_name) - 3, gvfile_name);
 
-    if (!close_files_success(fp, "logfile.htm"))
+    if (!close_files_success(fp, logfile_name))
     {
         return;
     }
 }
 
-void create_graph(const doubly_linked_list *list)
+void create_graph(const doubly_linked_list *list, const char *gvfile_name)
 {
-    FILE *fp = fopen(PATH_TO_GRAPHVIZ ".gv", "w");
+    FILE *fp = fopen(gvfile_name, "w");
 
-    if (!open_file_success(fp, PATH_TO_GRAPHVIZ ".gv"))
+    if (!open_file_success(fp, gvfile_name))
     {
         return;
     }
@@ -255,12 +284,36 @@ void create_graph(const doubly_linked_list *list)
 
     fprintf(fp, "}");
  
-    if (!close_files_success(fp, PATH_TO_GRAPHVIZ ".gv"))
+    if (!close_files_success(fp, gvfile_name))
     {
         return;
     }
+
+    char command[SIZE_OF_NAME * 2] = {0};
+    printf("gvfile_name = %s, gvfile_name = %*s\n", gvfile_name, (int)strlen(gvfile_name) - 3, gvfile_name);
+    sprintf(command, "dot -Kfdp %s -Tpng -o %*s.png", gvfile_name, (int)strlen(gvfile_name) - 3, gvfile_name);
     
-    system("dot -Kfdp " PATH_TO_GRAPHVIZ ".gv -Tpng -o " PATH_TO_GRAPHVIZ ".png");
+    system(command);
+}
+
+char *get_current_time()
+{
+    time_t rawtime;      
+    struct tm *timeinfo; 
+    char buffer[80];
+
+    // Get the current calendar time
+    time(&rawtime);
+
+    // Convert the calendar time to local time
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%Y_%m_%d_%H_%M_%S", timeinfo);
+
+    // Print the formatted time string
+    printf("Current time: %s\n", buffer);
+
+    return buffer;
 }
 
 void print_pointer_on_significant_el(FILE *fp, const char *str, ssize_t el)

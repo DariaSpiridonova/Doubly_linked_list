@@ -1,10 +1,8 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include "list.h"
 
-ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
+ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, const char *logfile_name)
 {
     ASSERT(list);
     assert(index >= 0);
@@ -13,7 +11,7 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 
@@ -24,8 +22,6 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
 
     if (list->size + 1 == list->capacity)
     {
-        printf("call\n");
-        LIST_DUMP(list);
         if (list->next[list->free] == 0) 
         {
             printf("list->next[list->free] == 0\n");
@@ -57,20 +53,18 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
         }
         list->capacity *= INCREASE_IN;
         list->next[list->capacity] = 0;
-        LIST_DUMP(list);
         
         err = NO_LIST_ERROR;
         if ((err = ListVerify(list)))
         {
-            LIST_DUMP(list);
+            LIST_DUMP(list, logfile_name);
             return err;
         }
     }
 
     ssize_t occupied = list->free;
-    printf("list->free = list->next[list->free] = %zd\n", list->free);
+    
     list->free = list->next[list->free];
-    printf("list->free = list->next[list->free] = %zd\n", list->free);
 
     list->data[occupied] = value;
     list->next[occupied] = list->next[index];
@@ -94,14 +88,14 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 
     return occupied;
 }
 
-List_Errors list_delete(doubly_linked_list *list, ssize_t index)
+List_Errors list_delete(doubly_linked_list *list, ssize_t index, const char *logfile_name)
 {
     ASSERT(list);
     assert(index >= 0);
@@ -110,7 +104,7 @@ List_Errors list_delete(doubly_linked_list *list, ssize_t index)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 
@@ -136,7 +130,7 @@ List_Errors list_delete(doubly_linked_list *list, ssize_t index)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list);
+        LIST_DUMP(list, logfile_name);
         return err;
     }
 

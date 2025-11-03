@@ -3,22 +3,10 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
-#define PATH_TO_GRAPHVIZ "../Graphviz/list_graph1"
-#define LIST_DUMP(list)\
-        ListDump(list,__FILE__, __LINE__)
-#define DUMP_PARAMETERS(fp, list)\
-    fprintf(fp, "LIST[%p]\n", list);\
-    fprintf(fp, "LIST_DATA[%p]\n", list->data);\
-    fprintf(fp, "LIST_NEXT[%p]\n", list->next);\
-    fprintf(fp, "LIST_PREV[%p]\n\n", list->prev);\
-    fprintf(fp, "{\n");\
-    fprintf(fp, "    capacity = %ld\n", list->capacity);\
-    fprintf(fp, "    size     = %ld\n", list->size);\
-    fprintf(fp, "    head     = %ld\n", list->head);\
-    fprintf(fp, "    tail     = %ld\n", list->tail);\
-    fprintf(fp, "    free     = %ld\n", list->free);\
-    fprintf(fp, "    {\n");
+#define LIST_DUMP(list, logfile_name)\
+        ListDump(list,__FILE__, __LINE__, logfile_name)
 
 #define ASSERT(list) \
     assert(list != NULL);\
@@ -38,6 +26,8 @@ typedef int used_type;
 const used_type CANARY = 43685;
 const used_type POIZON = 765418;
 const ssize_t INCREASE_IN = 2;
+const ssize_t SIZE_OF_NAME = 200;
+const char link_to_graphviz_file[] = "../Graphviz/list_graph_for_";
 
 typedef struct
 {
@@ -72,16 +62,17 @@ enum List_Errors
     ERROR_DURING_OPENING_LOGFILE
 };
 
-List_Errors ListInit(doubly_linked_list *list, ssize_t capacity);
+List_Errors ListInit(doubly_linked_list *list, ssize_t capacity, const char *logfile_name);
 List_Errors ListVerify(doubly_linked_list *list);
-List_Errors ListDestroy(doubly_linked_list *list);
+List_Errors ListDestroy(doubly_linked_list *list, const char *logfile_name);
 
-void ListDump(const doubly_linked_list *list, const char *file, int line);
+void ListDump(const doubly_linked_list *list, const char *file, int line, const char *logfile_name);
 // dump functions:
 void dump_to_console(FILE * fp, const doubly_linked_list *list, const char *file, int line);
 void print_content(const char *str, ssize_t initial_el,  ssize_t limitation, ssize_t index, ssize_t index1, const ssize_t * next, const void * buffer);
-void dump_to_logfile(const doubly_linked_list *list);
-void create_graph(const doubly_linked_list *list);
+void dump_to_logfile(const doubly_linked_list *list, const char *logfile_name, const char *gvfile_name);
+void create_graph(const doubly_linked_list *list, const char *gvfile_name);
+char *get_current_time();
 void print_pointer_on_significant_el(FILE *fp, const char *str, ssize_t el);
 void link_with_el(FILE *fp, const char ch, ssize_t el);
 
@@ -90,7 +81,11 @@ bool close_files_success(FILE *fp, const char * file_name);
 
 bool print_error(List_Errors err);
 
-ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value);
-List_Errors list_delete(doubly_linked_list *list, ssize_t index);
+ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, const char *logfile_name);
+List_Errors list_delete(doubly_linked_list *list, ssize_t index, const char *logfile_name);
+
+bool run_test_1();
+bool run_test_2();
+bool run_test_3();
 
 #endif
