@@ -7,6 +7,8 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity, const char *log
     assert(list != NULL);
     assert(capacity > 0);
 
+    list->file_name = logfile_name;
+
     list->data = (used_type *)calloc((size_t)capacity + 1, sizeof(used_type));
     if (list->data == NULL) 
         return EMPTY_POINTER_ON_DATA;
@@ -36,7 +38,7 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity, const char *log
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 
@@ -55,7 +57,7 @@ List_Errors ListInit(doubly_linked_list *list, ssize_t capacity, const char *log
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 
@@ -84,6 +86,7 @@ List_Errors ListVerify(doubly_linked_list *list)
         if (list->next[list->prev[i]] != i)
         {
             printf("After element with index %zd follows element with index %zd, and not %zd", list->prev[i], list->next[list->prev[i]], i);
+            LIST_DUMP(list);
             return NEXT_FROM_PREV_IS_NOT_CURRENT;
         }
         if (list->prev[list->next[i]] != i) 
@@ -98,11 +101,7 @@ List_Errors ListVerify(doubly_linked_list *list)
     return NO_LIST_ERROR;
 }
 
-// TODO: Logfile with list image evolution + text description
-// FIXME: !make list work!
-// TODO: add more examples
-
-List_Errors ListDestroy(doubly_linked_list *list, const char *logfile_name)
+List_Errors ListDestroy(doubly_linked_list *list)
 {
     ASSERT(list);
 
@@ -110,7 +109,7 @@ List_Errors ListDestroy(doubly_linked_list *list, const char *logfile_name)
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 
@@ -127,7 +126,7 @@ List_Errors ListDestroy(doubly_linked_list *list, const char *logfile_name)
     return err;
 }
 
-void ListDump(const doubly_linked_list *list, const char *file, int line, const char *logfile_name)
+void ListDump(const doubly_linked_list *list, const char *file, int line)
 {
     ASSERT(list);
 
@@ -147,11 +146,14 @@ void ListDump(const doubly_linked_list *list, const char *file, int line, const 
 
     // Print the formatted time string
     printf("Current time: %s\n", buffer);
+    struct timespec tstart={0,0};
+    clock_gettime(CLOCK_MONOTONIC, &tstart);
 
     char gvfile_name[SIZE_OF_NAME] = {0};
-    sprintf(gvfile_name, "%s%s%s.gv", link_to_graphviz_file, logfile_name, buffer);
+    sprintf(gvfile_name, "%s%s%s%ld.gv", link_to_graphviz_file, list->file_name, buffer, tstart.tv_nsec);
+    printf("%s%s%s%ld.gv\n", link_to_graphviz_file, list->file_name, buffer, tstart.tv_nsec);
 
-    dump_to_logfile(list, logfile_name, gvfile_name);
+    dump_to_logfile(list, list->file_name, gvfile_name);
 
     create_graph(list, gvfile_name);
 
@@ -196,7 +198,7 @@ void print_content(const char *str, ssize_t initial_el,  ssize_t limitation, ssi
     printf("        %s contents:\n", str);
     for (ssize_t i = initial_el; i * index1 < limitation; i = 1 * index + i * index + (index == 0) * next[i])
     {
-        printf("            [%zd] = %d\n", i, (index == 0) ? ((int *)buffer)[i] : ((ssize_t *)buffer)[i]);
+        printf("            [%zd] = %ld\n", i, (index == 0) ? ((const int *)buffer)[i] : ((const ssize_t *)buffer)[i]);
     }
 }
 
@@ -210,7 +212,7 @@ void dump_to_logfile(const doubly_linked_list *list, const char *logfile_name, c
     }
 
     fprintf(fp, "<pre>\n");
-    dump_parameters(stdin, list);
+    dump_parameters(fp, list);
     fprintf(fp, "        List contents:\n");
     for (ssize_t i = 1; i < list->capacity + 1; i++)
     {
@@ -245,7 +247,7 @@ void create_graph(const doubly_linked_list *list, const char *gvfile_name)
     fprintf(fp, "splines = ortho;\n");
     fprintf(fp, "rank = same;\n");
     fprintf(fp, "bgcolor=\"LightBlue\";\n");
-    fprintf(fp, "invis [shape = record, style = \"invis\", height = 6 , pos = \"2.0, 0.0!\"]");
+    fprintf(fp, "invis [shape = record, style = \"invis\", height = 6 , pos = \"2.0, 0.0!\"]\n");
     fprintf(fp, "   \"0\" [label = \"head = %ld | tail = %ld | free = %ld\", fillcolor = \"yellow\", pos = \"0.0, 0.0!\"];\n", list->head, list->tail, list->free);
     for (ssize_t i = 1; i < list->capacity + 1; i++)
     {
@@ -264,23 +266,46 @@ void create_graph(const doubly_linked_list *list, const char *gvfile_name)
     fprintf(fp, "[style = invis];\n");
     fprintf(fp, "   ");
 
-    fprintf(fp, "\"%zd\"", list->head);
-    for (ssize_t i = list->next[list->head]; i != 0; i = list->next[i])
+    ssize_t i = list->next[list->head];
+    if (i != 0)
     {
-        fprintf(fp, " -> \"%zd\"", i);
+        fprintf(fp, "\"%zd\"", list->head);
+        for (i = list->next[list->head]; i != 0; i = list->next[i])
+        {
+            fprintf(fp, " -> \"%zd\"", i);
+        }
+        fprintf(fp, "[style = \"\", color = \"black\"];\n");
     }
-    fprintf(fp, "[style = \"\", color = \"black\"];\n");
 
     link_with_el(fp, 'h', list->head);
     link_with_el(fp, 't', list->tail);
     link_with_el(fp, 'f', list->free);
     
-    fprintf(fp, "\"%zd\"", list->tail);
-    for (ssize_t i = list->prev[list->tail]; i != 0; i = list->prev[i])
-    {
-        fprintf(fp, " -> \"%zd\"", i);
+    i = list->prev[list->tail];
+    if (i != 0)
+    {   
+        fprintf(fp, "\"%zd\"", list->tail);
+        for (i = list->prev[list->tail]; i != 0; i = list->prev[i])
+        {
+            fprintf(fp, " -> \"%zd\"", i);
+        }
+        fprintf(fp, "[style = \"\", color = \"red\"];\n");
     }
-    fprintf(fp, "[style = \"\", color = \"red\"];\n");
+
+        for (i = list->free; i != 0; i = list->next[i])
+    {
+        fprintf(fp, "\"%zd\"[fillcolor = \"violet\"];\n", i);
+    }
+
+    if ((i = list->next[list->free]) != 0)
+    {
+        fprintf(fp, "\"%zd\"", list->free);
+        for (i = list->next[list->free]; i != 0; i = list->next[i])
+        {
+            fprintf(fp, " -> \"%zd\"", i);
+        }
+        fprintf(fp, "[style = \"\", color = \"brown\"];\n");
+    }
 
     fprintf(fp, "}");
  
@@ -293,27 +318,12 @@ void create_graph(const doubly_linked_list *list, const char *gvfile_name)
     printf("gvfile_name = %s, gvfile_name = %*s\n", gvfile_name, (int)strlen(gvfile_name) - 3, gvfile_name);
     sprintf(command, "dot -Kfdp %s -Tpng -o %*s.png", gvfile_name, (int)strlen(gvfile_name) - 3, gvfile_name);
     
-    system(command);
-}
-
-char *get_current_time()
-{
-    time_t rawtime;      
-    struct tm *timeinfo; 
-    char buffer[80];
-
-    // Get the current calendar time
-    time(&rawtime);
-
-    // Convert the calendar time to local time
-    timeinfo = localtime(&rawtime);
-
-    strftime(buffer, sizeof(buffer), "%Y_%m_%d_%H_%M_%S", timeinfo);
-
-    // Print the formatted time string
-    printf("Current time: %s\n", buffer);
-
-    return buffer;
+    int error = system(command);
+    if (error)
+    {
+        printf("%d", error);
+        //assert(0);
+    }
 }
 
 void print_pointer_on_significant_el(FILE *fp, const char *str, ssize_t el)
@@ -324,6 +334,87 @@ void print_pointer_on_significant_el(FILE *fp, const char *str, ssize_t el)
 void link_with_el(FILE *fp, const char ch, ssize_t el)
 {
     fprintf(fp, "\"%c\" -> \"%zd\";\n", ch, el);
+}
+
+List_Errors list_linearization(doubly_linked_list *list)
+{
+    ASSERT(list);
+
+    List_Errors err = NO_LIST_ERROR;
+
+    if ((err = ListVerify(list)))
+    {
+        LIST_DUMP(list);
+        return err;
+    }
+
+    used_type *linearized_list = (used_type *)calloc((size_t)list->capacity + 1, sizeof(used_type));
+   
+    if (linearized_list == NULL) 
+    {
+        return EMPTY_POINTER_ON_LINEARIZED_LIST;
+    }
+
+    ssize_t index = 0;
+    linearized_list[index++] = CANARY;
+    printf("YES***********************\n");
+    for (ssize_t i = list->next[0]; i != 0; i = list->next[i], index++)
+    {
+        linearized_list[index] = list->data[i];
+        printf("%d\n", linearized_list[index]);
+    }
+
+    for (ssize_t i = 1; i <= list->size; i++)
+    {
+        list->next[i] = i + 1;
+        list->prev[i] = i - 1;
+    }
+
+    for (ssize_t i = list->size + 1; i <= list->capacity; i++)
+    {
+        linearized_list[i] = POIZON;
+        list->next[i] = i + 1;
+        list->prev[i] = -1;
+    }
+
+    list->next[list->capacity] = 0;
+
+    list->next[list->size] = 0;
+
+    free(list->data);
+
+    list->data = linearized_list;
+    if (list->size > 0) 
+    {
+        list->head = 1;
+        list->next[0] = 1;
+    }
+    else 
+    {
+        list->head = 0;
+        list->next[0] = 0;
+    }
+
+    if (list->size > 0) 
+    {
+        list->tail = list->size;
+        list->prev[0] = list->size;
+    }
+    else 
+    {
+        list->tail = 0;
+        list->prev[0] = 0;
+    }
+
+    list->free = list->size + 1;
+
+    if ((err = ListVerify(list)))
+    {
+        LIST_DUMP(list);
+        return err;
+    }
+
+    return err;
 }
 
 bool open_file_success(FILE *fp, const char * file_name)
@@ -369,6 +460,10 @@ bool print_error(List_Errors err)
 
         case EMPTY_POINTER_ON_PREV:
             printf("The pointer to the PREV is empty");
+            return true;
+
+        case EMPTY_POINTER_ON_LINEARIZED_LIST:
+            printf("The pointer to the LINEARIZED LIST is empty");
             return true;
 
         case ERROR_IN_CAPACITY:

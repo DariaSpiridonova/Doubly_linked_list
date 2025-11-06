@@ -2,7 +2,7 @@
 #include <string.h>
 #include "list.h"
 
-ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, const char *logfile_name)
+ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value)
 {
     ASSERT(list);
     assert(index >= 0);
@@ -11,7 +11,7 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, co
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 
@@ -44,7 +44,7 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, co
             free(list->next);
             return ALLOCATE_MEMORY_ERROR;
         }
-        
+
         for (ssize_t i = list->capacity + 1; i < list->capacity * INCREASE_IN + 1; i++)
         {
             list->data[i] = POIZON;
@@ -57,7 +57,7 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, co
         err = NO_LIST_ERROR;
         if ((err = ListVerify(list)))
         {
-            LIST_DUMP(list, logfile_name);
+            LIST_DUMP(list);
             return err;
         }
     }
@@ -88,14 +88,14 @@ ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, co
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 
     return occupied;
 }
 
-List_Errors list_delete(doubly_linked_list *list, ssize_t index, const char *logfile_name)
+List_Errors list_delete(doubly_linked_list *list, ssize_t index)
 {
     ASSERT(list);
     assert(index >= 0);
@@ -104,7 +104,7 @@ List_Errors list_delete(doubly_linked_list *list, ssize_t index, const char *log
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 
@@ -130,7 +130,7 @@ List_Errors list_delete(doubly_linked_list *list, ssize_t index, const char *log
 
     if ((err = ListVerify(list)))
     {
-        LIST_DUMP(list, logfile_name);
+        LIST_DUMP(list);
         return err;
     }
 

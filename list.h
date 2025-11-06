@@ -5,8 +5,8 @@
 #include <assert.h>
 #include <time.h>
 
-#define LIST_DUMP(list, logfile_name)\
-        ListDump(list,__FILE__, __LINE__, logfile_name)
+#define LIST_DUMP(list)\
+        ListDump(list,__FILE__, __LINE__)
 
 #define ASSERT(list) \
     assert(list != NULL);\
@@ -32,6 +32,7 @@ const char link_to_graphviz_file[] = "../Graphviz/list_graph_for_";
 typedef struct
 {
     used_type *data;
+    const char *file_name;
     ssize_t *next;
     ssize_t *prev;
     ssize_t capacity;
@@ -48,6 +49,7 @@ enum List_Errors
     EMPTY_POINTER_ON_DATA,
     EMPTY_POINTER_ON_NEXT,
     EMPTY_POINTER_ON_PREV,
+    EMPTY_POINTER_ON_LINEARIZED_LIST,
     ALLOCATE_MEMORY_ERROR,
     ERROR_IN_CAPACITY,
     TOO_SMALL_HEAD,
@@ -64,10 +66,11 @@ enum List_Errors
 
 List_Errors ListInit(doubly_linked_list *list, ssize_t capacity, const char *logfile_name);
 List_Errors ListVerify(doubly_linked_list *list);
-List_Errors ListDestroy(doubly_linked_list *list, const char *logfile_name);
+List_Errors ListDestroy(doubly_linked_list *list);
 
-void ListDump(const doubly_linked_list *list, const char *file, int line, const char *logfile_name);
+void ListDump(const doubly_linked_list *list, const char *file, int line);
 // dump functions:
+void dump_parameters(FILE * fp, const doubly_linked_list *list);
 void dump_to_console(FILE * fp, const doubly_linked_list *list, const char *file, int line);
 void print_content(const char *str, ssize_t initial_el,  ssize_t limitation, ssize_t index, ssize_t index1, const ssize_t * next, const void * buffer);
 void dump_to_logfile(const doubly_linked_list *list, const char *logfile_name, const char *gvfile_name);
@@ -76,16 +79,19 @@ char *get_current_time();
 void print_pointer_on_significant_el(FILE *fp, const char *str, ssize_t el);
 void link_with_el(FILE *fp, const char ch, ssize_t el);
 
+List_Errors list_linearization(doubly_linked_list *list);
+
 bool open_file_success(FILE *fp, const char * file_name);
 bool close_files_success(FILE *fp, const char * file_name);
 
 bool print_error(List_Errors err);
 
-ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value, const char *logfile_name);
-List_Errors list_delete(doubly_linked_list *list, ssize_t index, const char *logfile_name);
+ssize_t list_insert(doubly_linked_list *list, ssize_t index, used_type value);
+List_Errors list_delete(doubly_linked_list *list, ssize_t index);
 
 bool run_test_1();
 bool run_test_2();
 bool run_test_3();
+bool run_test_4();
 
 #endif
